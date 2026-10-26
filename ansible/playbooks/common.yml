@@ -1,0 +1,19 @@
+---
+- name: Configure common software on Jenkins servers
+  hosts: all
+  become: true
+
+  tasks:
+    - name: Install common system packages
+      ansible.builtin.apt:
+        name:
+          - ca-certificates
+          - curl
+          - git
+          - gnupg
+          - unzip
+          - python3-venv
+        state: present
+        update_cache: true
+        cache_valid_time: 3600
+        lock_timeout: 300
