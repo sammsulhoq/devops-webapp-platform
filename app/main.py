@@ -23,3 +23,19 @@ def home():
 def health_live():
     """Confirm that the application process is responding."""
     return jsonify(status="healthy"), 200
+
+
+@app.get("/health/ready")
+def health_ready():
+    """Confirm that this instance can accept application traffic."""
+    return jsonify(status="ready"), 200
+
+
+@app.get("/api/info")
+def application_info():
+    """Return the application version and instance hostname."""
+    return jsonify(
+        application="DevOps Web Application Platform",
+        version=os.getenv("APP_VERSION", "local"),
+        hostname=socket.gethostname(),
+    )
