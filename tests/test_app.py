@@ -50,3 +50,17 @@ def test_unknown_route(client):
     response = client.get("/does-not-exist")
 
     assert response.status_code == 404
+
+
+def test_metrics_record_application_requests(client):
+    client.get("/api/info")
+
+    response = client.get("/metrics")
+    metrics_text = response.get_data(as_text=True)
+
+    assert response.status_code == 200
+    assert response.mimetype == "text/plain"
+    assert (
+        'capstone_http_requests_total{method="GET",route="/api/info",status="200"}'
+        in metrics_text
+    )
