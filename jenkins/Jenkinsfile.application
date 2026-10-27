@@ -1,0 +1,67 @@
+pipeline {
+    agent {
+        label 'devops-agent'
+    }
+
+    options {
+        disableConcurrentBuilds()
+        timeout(time: 30, unit: 'MINUTES')
+        skipDefaultCheckout(true)
+    }
+
+    environment {
+        AWS_DEFAULT_REGION = 'ap-south-1'
+        ECR_REGISTRY       = '483510445289.dkr.ecr.ap-south-1.amazonaws.com'
+        ECR_REPOSITORY     = 'hv-capstone-app'
+    }
+
+    stages {
+        stage('Checkout') {
+            steps {
+                checkout scm
+                script {
+                    env.IMAGE_TAG = "${sh(
+                        script: 'git rev-parse --short=12 HEAD',
+                        returnStdout: true
+                    ).trim()}-${env.BUILD_NUMBER}"
+                    env.IMAGE_URI = "${env.ECR_REGISTRY}/${env.ECR_REPOSITORY}:${env.IMAGE_TAG}"
+                }
+                echo "Image: ${env.IMAGE_URI}"
+            }
+        }
+
+        stage('Test application') {
+            steps {
+                sh '''
+                    docker run --rm \
+                      -v "$WORKSPACE:/workspace:ro" \
+                      -w /workspace \
+                      -e PYTHONDONTWRITEBYTECODE=1 \
+                      python:3.12-slim \
+                      sh -c 'python -m pip install -r requirements-dev.txt && python -m pytest -q -p no:cacheprovider'
+                '''
+            }
+        }
+
+        stage('Build image') {
+            steps {
+                sh 'docker build -t "$IMAGE_URI" .'
+            }
+        }
+
+        stage('Push image to ECR') {
+            steps {
+                sh '''
+                    set -eu
+                    export DOCKER_CONFIG="$(mktemp -d)"
+                    trap 'rm -rf "$DOCKER_CONFIG"' EXIT
+
+                    aws ecr get-login-password --region "$AWS_DEFAULT_REGION" |
+                      docker login --username AWS --password-stdin "$ECR_REGISTRY"
+
+                    docker push "$IMAGE_URI"
+                '''
+            }
+        }
+    }
+}
