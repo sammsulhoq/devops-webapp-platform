@@ -1,0 +1,179 @@
+---
+- name: Prepare Jenkins build agent
+  hosts: jenkins_agent
+  become: true
+
+  tasks:
+    - name: Install Java runtime
+      ansible.builtin.apt:
+        name: openjdk-21-jre-headless
+        state: present
+        update_cache: true
+        cache_valid_time: 3600
+        lock_timeout: 300
+
+    - name: Create Jenkins agent group
+      ansible.builtin.group:
+        name: jenkins
+        state: present
+
+    - name: Create Jenkins agent user
+      ansible.builtin.user:
+        name: jenkins
+        group: jenkins
+        home: /home/jenkins
+        shell: /bin/bash
+        create_home: true
+        state: present
+
+    - name: Create Jenkins agent working directory
+      ansible.builtin.file:
+        path: /home/jenkins/agent
+        state: directory
+        owner: jenkins
+        group: jenkins
+        mode: "0750"
+
+    - name: Create Jenkins SSH directory
+      ansible.builtin.file:
+        path: /home/jenkins/.ssh
+        state: directory
+        owner: jenkins
+        group: jenkins
+        mode: "0700"
+
+    - name: Authorize the controller-to-agent public key
+      ansible.builtin.lineinfile:
+        path: /home/jenkins/.ssh/authorized_keys
+        line: "{{ lookup('ansible.builtin.file', playbook_dir ~ '/../files/jenkins-agent.pub') }}"
+        create: true
+        owner: jenkins
+        group: jenkins
+        mode: "0600"
+
+    - name: Install Docker
+      ansible.builtin.apt:
+        name: docker.io
+        state: present
+        update_cache: true
+        cache_valid_time: 3600
+        lock_timeout: 300
+
+    - name: Allow Jenkins to use Docker
+      ansible.builtin.user:
+        name: jenkins
+        groups: docker
+        append: true
+
+    - name: Enable and start Docker
+      ansible.builtin.systemd_service:
+        name: docker
+        enabled: true
+        state: started
+
+    - name: Check whether AWS CLI is installed
+      ansible.builtin.stat:
+        path: /usr/local/bin/aws
+      register: aws_cli_install
+
+    - name: Install AWS CLI v2
+      when: not aws_cli_install.stat.exists
+      block:
+        - name: Create temporary installer directory
+          ansible.builtin.file:
+            path: /tmp/hv-capstone-awscli
+            state: directory
+            mode: "0755"
+
+        - name: Download AWS CLI installer
+          ansible.builtin.get_url:
+            url: https://awscli.amazonaws.com/awscli-exe-linux-x86_64.zip
+            dest: /tmp/hv-capstone-awscli/awscliv2.zip
+            mode: "0644"
+
+        - name: Extract AWS CLI installer
+          ansible.builtin.unarchive:
+            src: /tmp/hv-capstone-awscli/awscliv2.zip
+            dest: /tmp/hv-capstone-awscli
+            remote_src: true
+
+        - name: Run AWS CLI installer
+          ansible.builtin.command:
+            cmd: /tmp/hv-capstone-awscli/aws/install
+            creates: /usr/local/bin/aws
+
+        - name: Remove temporary installer files
+          ansible.builtin.file:
+            path: /tmp/hv-capstone-awscli
+            state: absent
+
+    - name: Download Terraform 1.16.1
+      ansible.builtin.get_url:
+        url: https://releases.hashicorp.com/terraform/1.16.1/terraform_1.16.1_linux_amd64.zip
+        dest: /tmp/terraform_1.16.1_linux_amd64.zip
+        checksum: "sha256:https://releases.hashicorp.com/terraform/1.16.1/terraform_1.16.1_SHA256SUMS"
+        mode: "0644"
+
+    - name: Install Terraform executable
+      ansible.builtin.unarchive:
+        src: /tmp/terraform_1.16.1_linux_amd64.zip
+        dest: /usr/local/bin
+        remote_src: true
+        include:
+          - terraform
+        owner: root
+        group: root
+        mode: "0755"
+
+    - name: Read kubectl checksum
+      ansible.builtin.uri:
+        url: https://dl.k8s.io/release/v1.35.9/bin/linux/amd64/kubectl.sha256
+        return_content: true
+      register: kubectl_checksum
+
+    - name: Install kubectl
+      ansible.builtin.get_url:
+        url: https://dl.k8s.io/release/v1.35.9/bin/linux/amd64/kubectl
+        dest: /usr/local/bin/kubectl
+        checksum: "sha256:{{ kubectl_checksum.content | trim }}"
+        owner: root
+        group: root
+        mode: "0755"
+
+    - name: Create Helm download directory
+      ansible.builtin.file:
+        path: /tmp/hv-capstone-helm
+        state: directory
+        mode: "0755"
+
+    - name: Download Helm 3.22.1
+      ansible.builtin.get_url:
+        url: https://get.helm.sh/helm-v3.22.1-linux-amd64.tar.gz
+        dest: /tmp/hv-capstone-helm/helm-v3.22.1-linux-amd64.tar.gz
+        checksum: "sha256:https://get.helm.sh/helm-v3.22.1-linux-amd64.tar.gz.sha256sum"
+        mode: "0644"
+
+    - name: Extract Helm executable
+      ansible.builtin.unarchive:
+        src: /tmp/hv-capstone-helm/helm-v3.22.1-linux-amd64.tar.gz
+        dest: /tmp/hv-capstone-helm
+        remote_src: true
+        include:
+          - linux-amd64/helm
+
+    - name: Install Helm executable
+      ansible.builtin.copy:
+        src: /tmp/hv-capstone-helm/linux-amd64/helm
+        dest: /usr/local/bin/helm
+        remote_src: true
+        owner: root
+        group: root
+        mode: "0755"
+
+    - name: Install Ansible
+      ansible.builtin.apt:
+        name: ansible-core
+        state: present
+        update_cache: true
+        cache_valid_time: 3600
+        lock_timeout: 300
