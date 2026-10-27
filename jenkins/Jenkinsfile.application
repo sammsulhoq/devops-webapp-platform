@@ -84,6 +84,19 @@ pipeline {
                     kubectl apply -f kubernetes/service.yaml
                     kubectl apply -f "$work_dir/deployment.yaml"
                     kubectl rollout status deployment/devops-webapp --timeout=180s
+
+                    kubectl exec deployment/devops-webapp -- python -c '
+import json
+import sys
+from urllib.request import urlopen
+
+with urlopen("http://devops-webapp/api/info", timeout=10) as response:
+    data = json.load(response)
+
+print("Application response:", data)
+if data.get("version") != sys.argv[1]:
+    raise SystemExit("Deployed application version does not match this build")
+' "$IMAGE_TAG"
                 '''
             }
         }
