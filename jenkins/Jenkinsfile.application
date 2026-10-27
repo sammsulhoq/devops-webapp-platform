@@ -64,5 +64,28 @@ pipeline {
                 '''
             }
         }
+
+        stage('Deploy to EKS') {
+            steps {
+                sh '''
+                    set -eu
+
+                    work_dir="$(mktemp -d)"
+                    export KUBECONFIG="$work_dir/kubeconfig"
+                    trap 'rm -rf "$work_dir"' EXIT
+
+                    aws eks update-kubeconfig \
+                      --name hv-capstone-dev \
+                      --region "$AWS_DEFAULT_REGION"
+
+                    sed "s|initial|$IMAGE_TAG|g" \
+                      kubernetes/deployment.yaml > "$work_dir/deployment.yaml"
+
+                    kubectl apply -f kubernetes/service.yaml
+                    kubectl apply -f "$work_dir/deployment.yaml"
+                    kubectl rollout status deployment/devops-webapp --timeout=180s
+                '''
+            }
+        }
     }
 }
