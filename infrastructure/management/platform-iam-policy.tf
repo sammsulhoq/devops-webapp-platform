@@ -65,6 +65,12 @@ resource "aws_iam_role_policy" "platform_iam" {
         }
       },
       {
+        Sid      = "ReadEKSNodegroupServiceRole"
+        Effect   = "Allow"
+        Action   = ["iam:GetRole"]
+        Resource = "arn:aws:iam::483510445289:role/aws-service-role/eks-nodegroup.amazonaws.com/AWSServiceRoleForAmazonEKSNodegroup"
+      },
+      {
         Sid      = "CreateRequiredServiceLinkedRoles"
         Effect   = "Allow"
         Action   = ["iam:CreateServiceLinkedRole"]
