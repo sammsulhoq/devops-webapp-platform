@@ -23,6 +23,11 @@ resource "aws_instance" "jenkins" {
     delete_on_termination = true
   }
 
+  lifecycle {
+    prevent_destroy = true
+    ignore_changes  = [associate_public_ip_address]
+  }
+
   metadata_options {
     http_endpoint = "enabled"
     http_tokens   = "required"
