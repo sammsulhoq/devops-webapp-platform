@@ -15,9 +15,17 @@ Implemented and verified locally:
 - Docker image running Gunicorn as a non-root user.
 - Docker Compose setup with an application health check.
 
-Planned: Terraform, Ansible, Jenkins, Amazon ECR, Amazon EKS, Prometheus, and Grafana deployment.
+Implemented and verified in AWS:
 
-No AWS infrastructure has been provisioned for this project yet.
+- S3 Terraform state bucket with versioning, encryption, public access blocking, and state locking.
+- Jenkins controller and build agent provisioned on EC2 using Terraform.
+- Jenkins and agent configuration managed with Ansible.
+- Build agent verified with Docker, AWS CLI, Terraform, kubectl, Helm, and Ansible.
+- Jenkins agent uses an EC2 IAM role for AWS authentication.
+
+Planned: Amazon ECR, Amazon EKS, automated application deployment, Prometheus, and Grafana.
+
+The Jenkins EC2 instances and their storage incur AWS charges while the lab resources exist.
 
 ## Run Locally with Docker
 
