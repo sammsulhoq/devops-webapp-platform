@@ -78,7 +78,7 @@ pipeline {
                       --name hv-capstone-dev \
                       --region "$AWS_DEFAULT_REGION"
 
-                    sed "s|initial|$IMAGE_TAG|g" \
+                    sed -e "s|hv-capstone-app:initial|hv-capstone-app:$IMAGE_TAG|" -e "s|value: .*initial.*|value: $IMAGE_TAG|" \
                       kubernetes/deployment.yaml > "$work_dir/deployment.yaml"
 
                     kubectl apply -f kubernetes/service.yaml
