@@ -5,7 +5,7 @@ pipeline {
 
     options {
         disableConcurrentBuilds()
-        timeout(time: 20, unit: 'MINUTES')
+        timeout(time: 90, unit: 'MINUTES')
         skipDefaultCheckout(true)
     }
 
@@ -14,6 +14,11 @@ pipeline {
             name: 'ADMIN_CIDR',
             defaultValue: '',
             description: 'Your public IPv4 address with /32, for example 203.0.113.10/32'
+        )
+        booleanParam(
+            name: 'APPLY_CHANGES',
+            defaultValue: false,
+            description: 'After reviewing the plan, allow this build to request approval to apply it'
         )
     }
 
@@ -47,16 +52,50 @@ pipeline {
             }
         }
 
-        stage('Preview platform infrastructure') {
+        stage('Plan platform infrastructure') {
             steps {
                 dir('infrastructure/platform') {
                     sh '''
                         python3 -c 'import ipaddress, os; n = ipaddress.ip_network(os.environ["ADMIN_CIDR"], strict=True); assert n.version == 4 and n.prefixlen == 32, "ADMIN_CIDR must be a single IPv4 /32"; print("Administrator CIDR is valid")'
 
                         export TF_VAR_admin_cidr="$ADMIN_CIDR"
-                        terraform plan -input=false -lock-timeout=5m -no-color
+                        terraform plan -input=false -lock-timeout=5m -no-color -out=jenkins.tfplan
                     '''
                 }
+            }
+        }
+
+        stage('Approve infrastructure changes') {
+            when {
+                expression { params.APPLY_CHANGES }
+            }
+            steps {
+                timeout(time: 15, unit: 'MINUTES') {
+                    input(
+                        message: 'Review this build’s Terraform plan. Apply these AWS changes?',
+                        ok: 'Apply plan',
+                        submitter: 'sammsulhoq'
+                    )
+                }
+            }
+        }
+
+        stage('Apply platform infrastructure') {
+            when {
+                expression { params.APPLY_CHANGES }
+            }
+            steps {
+                dir('infrastructure/platform') {
+                    sh 'terraform apply -input=false -lock-timeout=5m -no-color jenkins.tfplan'
+                }
+            }
+        }
+    }
+
+    post {
+        always {
+            dir('infrastructure/platform') {
+                sh 'rm -f jenkins.tfplan'
             }
         }
     }
