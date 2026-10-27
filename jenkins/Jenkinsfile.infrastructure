@@ -1,0 +1,63 @@
+pipeline {
+    agent {
+        label 'devops-agent'
+    }
+
+    options {
+        disableConcurrentBuilds()
+        timeout(time: 20, unit: 'MINUTES')
+        skipDefaultCheckout(true)
+    }
+
+    parameters {
+        string(
+            name: 'ADMIN_CIDR',
+            defaultValue: '',
+            description: 'Your public IPv4 address with /32, for example 203.0.113.10/32'
+        )
+    }
+
+    environment {
+        AWS_DEFAULT_REGION = 'ap-south-1'
+        TF_IN_AUTOMATION   = 'true'
+    }
+
+    stages {
+        stage('Checkout') {
+            steps {
+                checkout scm
+            }
+        }
+
+        stage('Verify AWS identity') {
+            steps {
+                sh 'aws sts get-caller-identity --query Arn --output text'
+            }
+        }
+
+        stage('Validate Terraform') {
+            steps {
+                dir('infrastructure/platform') {
+                    sh '''
+                        terraform fmt -check -recursive
+                        terraform init -input=false -lockfile=readonly
+                        terraform validate
+                    '''
+                }
+            }
+        }
+
+        stage('Preview platform infrastructure') {
+            steps {
+                dir('infrastructure/platform') {
+                    sh '''
+                        python3 -c 'import ipaddress, os; n = ipaddress.ip_network(os.environ["ADMIN_CIDR"], strict=True); assert n.version == 4 and n.prefixlen == 32, "ADMIN_CIDR must be a single IPv4 /32"; print("Administrator CIDR is valid")'
+
+                        export TF_VAR_admin_cidr="$ADMIN_CIDR"
+                        terraform plan -input=false -lock-timeout=5m -no-color
+                    '''
+                }
+            }
+        }
+    }
+}
