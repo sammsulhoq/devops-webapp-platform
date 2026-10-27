@@ -82,6 +82,7 @@ pipeline {
                       kubernetes/deployment.yaml > "$work_dir/deployment.yaml"
 
                     kubectl apply -f kubernetes/service.yaml
+                    kubectl apply -f kubernetes/hpa.yaml
                     kubectl apply -f "$work_dir/deployment.yaml"
                     kubectl rollout status deployment/devops-webapp --timeout=180s
 
