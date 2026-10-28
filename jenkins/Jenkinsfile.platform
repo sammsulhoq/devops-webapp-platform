@@ -1,0 +1,66 @@
+pipeline {
+    agent {
+        label 'devops-agent'
+    }
+
+    options {
+        disableConcurrentBuilds()
+        timeout(time: 20, unit: 'MINUTES')
+        skipDefaultCheckout(true)
+    }
+
+    environment {
+        AWS_DEFAULT_REGION = 'ap-south-1'
+    }
+
+    stages {
+        stage('Checkout') {
+            steps {
+                checkout scm
+            }
+        }
+
+        stage('Install load balancer controller') {
+            steps {
+                sh '''
+                    set -eu
+
+                    work_dir="$(mktemp -d)"
+                    export KUBECONFIG="$work_dir/kubeconfig"
+                    trap 'rm -rf "$work_dir"' EXIT
+
+                    aws eks update-kubeconfig \
+                      --name hv-capstone-dev \
+                      --region "$AWS_DEFAULT_REGION"
+
+                    helm repo add eks https://aws.github.io/eks-charts
+                    helm repo update eks
+
+                    helm upgrade --install \
+                      aws-load-balancer-controller \
+                      eks/aws-load-balancer-controller \
+                      --version 1.14.1 \
+                      --namespace kube-system \
+                      -f platform/load-balancer-controller-values.yaml \
+                      --wait \
+                      --timeout 10m
+
+                    kubectl -n kube-system rollout status \
+                      deployment/aws-load-balancer-controller \
+                      --timeout=180s
+                '''
+            }
+        }
+    }
+
+    post {
+        failure {
+            emailext(
+                to: 'sammsulhoq@gmail.com',
+                from: 'sammsulhoq@gmail.com',
+                subject: "FAILED: ${env.JOB_NAME} #${env.BUILD_NUMBER}",
+                body: "Platform component pipeline failed. Inspect: ${env.BUILD_URL}"
+            )
+        }
+    }
+}
