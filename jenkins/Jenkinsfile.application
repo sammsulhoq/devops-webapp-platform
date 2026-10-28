@@ -85,6 +85,7 @@ pipeline {
                     kubectl apply -f kubernetes/hpa.yaml
                     kubectl apply -f "$work_dir/deployment.yaml"
                     kubectl rollout status deployment/devops-webapp --timeout=180s
+                    kubectl apply -f kubernetes/ingress.yaml
 
                     kubectl exec deployment/devops-webapp -- python -c '
 import json
