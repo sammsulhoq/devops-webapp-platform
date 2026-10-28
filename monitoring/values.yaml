@@ -1,0 +1,20 @@
+grafana:
+  service:
+    type: ClusterIP
+  persistence:
+    enabled: false
+  admin:
+    existingSecret: monitoring-grafana-admin
+
+prometheus:
+  service:
+    type: ClusterIP
+  prometheusSpec:
+    retention: 6h
+    serviceMonitorSelectorNilUsesHelmValues: false
+
+alertmanager:
+  service:
+    type: ClusterIP
+  alertmanagerSpec:
+    storage: {}

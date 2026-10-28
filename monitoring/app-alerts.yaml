@@ -1,0 +1,22 @@
+apiVersion: monitoring.coreos.com/v1
+kind: PrometheusRule
+metadata:
+  name: devops-webapp-alerts
+  namespace: monitoring
+  labels:
+    release: capstone-monitoring
+spec:
+  groups:
+    - name: devops-webapp
+      rules:
+        - alert: CapstoneApplicationUnavailable
+          expr: |
+            (sum(up{namespace="default",service="devops-webapp"}) == 0)
+            or
+            absent(up{namespace="default",service="devops-webapp"})
+          for: 2m
+          labels:
+            severity: critical
+          annotations:
+            summary: "No capstone application targets are reachable"
+            description: "Prometheus has had no successfully scraped application targets for at least two minutes."
