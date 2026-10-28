@@ -17,4 +17,5 @@ alertmanager:
   service:
     type: ClusterIP
   alertmanagerSpec:
+    configSecret: capstone-alertmanager-config
     storage: {}
