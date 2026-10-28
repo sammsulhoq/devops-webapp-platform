@@ -102,4 +102,22 @@ if data.get("version") != sys.argv[1]:
             }
         }
     }
+
+    post {
+        failure {
+            emailext(
+                to: 'sammsulhoq@gmail.com',
+                from: 'sammsulhoq@gmail.com',
+                subject: "FAILED: ${env.JOB_NAME} #${env.BUILD_NUMBER}",
+                body: """The application pipeline failed.
+
+Job: ${env.JOB_NAME}
+Build: ${env.BUILD_NUMBER}
+Details: ${env.BUILD_URL}
+
+Open the build console to inspect the failed stage.
+"""
+            )
+        }
+    }
 }
