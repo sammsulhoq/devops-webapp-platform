@@ -1,0 +1,70 @@
+pipeline {
+    agent {
+        label 'devops-agent'
+    }
+
+    options {
+        disableConcurrentBuilds()
+        timeout(time: 30, unit: 'MINUTES')
+        skipDefaultCheckout(true)
+    }
+
+    environment {
+        AWS_DEFAULT_REGION = 'ap-south-1'
+    }
+
+    stages {
+        stage('Checkout') {
+            steps {
+                checkout scm
+            }
+        }
+
+        stage('Deploy monitoring') {
+            steps {
+                sh '''
+                    set -eu
+
+                    work_dir="$(mktemp -d)"
+                    export KUBECONFIG="$work_dir/kubeconfig"
+                    trap 'rm -rf "$work_dir"' EXIT
+
+                    aws eks update-kubeconfig \
+                      --name hv-capstone-dev \
+                      --region "$AWS_DEFAULT_REGION"
+
+                    kubectl -n monitoring get secret \
+                      monitoring-grafana-admin \
+                      capstone-alertmanager-config \
+                      -o name
+
+                    helm upgrade --install \
+                      capstone-monitoring \
+                      oci://ghcr.io/prometheus-community/charts/kube-prometheus-stack \
+                      --version 92.14.0 \
+                      --namespace monitoring \
+                      -f monitoring/values.yaml \
+                      --wait \
+                      --timeout 10m
+
+                    kubectl apply -f monitoring/app-servicemonitor.yaml
+                    kubectl apply -f monitoring/app-dashboard.json
+                    kubectl apply -f monitoring/app-alerts.yaml
+
+                    kubectl -n monitoring get pods
+                '''
+            }
+        }
+    }
+
+    post {
+        failure {
+            emailext(
+                to: 'sammsulhoq@gmail.com',
+                from: 'sammsulhoq@gmail.com',
+                subject: "FAILED: ${env.JOB_NAME} #${env.BUILD_NUMBER}",
+                body: "Monitoring pipeline failed. Inspect: ${env.BUILD_URL}"
+            )
+        }
+    }
+}
