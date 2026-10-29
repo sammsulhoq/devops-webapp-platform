@@ -69,9 +69,34 @@ Terraform manages its IAM role, policy, and OIDC provider.
 
 ## Configuration Management
 
-Ansible playbooks configure the Jenkins controller and agent.
-They were executed separately during server setup; they are not currently
-a stage of the application pipeline.
+Job: `capstone-server-configuration`
+
+Source: `jenkins/Jenkinsfile.configuration`
+
+After a successful Terraform apply, the infrastructure pipeline
+automatically queues this job with APPLY_CONFIGURATION enabled.
+Plan-only runs skip the trigger.
+
+The job validates common.yml, verifies SSH and sudo access to both
+servers, and applies the common package configuration over private IPs.
+It uses credential hv-capstone-ansible-ssh and recorded SSH host keys.
+
+The trigger is asynchronous to avoid holding the agent executor while
+waiting for another job that needs it. Check the configuration job's
+result separately; its failure does not change the upstream result.
+
+The automatic run completed successfully with changed=0,
+unreachable=0, and failed=0 on both servers.
+
+Controller and agent installation playbooks were run separately during
+initial setup. They are not executed by this configuration job.
+
+The dedicated configuration credential connects as ubuntu with sudo
+access. Restrict who can modify or run pipelines that use it.
+
+Evidence:
+- ../screenshots/69-jenkins-ansible-configuration-success.png
+- ../screenshots/70-terraform-triggered-ansible.png
 
 ## Webhook Demonstration
 
