@@ -148,6 +148,7 @@ The application is published on the computer's loopback address only.
 - [Setup guide](docs/runbooks/setup.md)
 
 - [Jenkins pipelines](docs/runbooks/pipelines.md)
+- [Jenkins monitoring](docs/runbooks/jenkins-monitoring.md)
 - [Troubleshooting](docs/runbooks/troubleshooting.md)
 - [Validation results and limitations](docs/runbooks/validation.md)
 - [Cost management](docs/runbooks/cost-management.md)
