@@ -12,9 +12,12 @@ resource "aws_instance" "jenkins" {
   instance_type               = "t3.medium"
   subnet_id                   = aws_subnet.management_public.id
   associate_public_ip_address = true
-  vpc_security_group_ids      = [each.value]
-  key_name                    = aws_key_pair.jenkins.key_name
-  iam_instance_profile        = aws_iam_instance_profile.jenkins[each.key].name
+  vpc_security_group_ids = [
+    each.value,
+    aws_security_group.jenkins_configuration.id
+  ]
+  key_name             = aws_key_pair.jenkins.key_name
+  iam_instance_profile = aws_iam_instance_profile.jenkins[each.key].name
 
   root_block_device {
     volume_type           = "gp3"

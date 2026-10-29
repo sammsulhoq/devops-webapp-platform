@@ -1,0 +1,78 @@
+pipeline {
+    agent {
+        label 'devops-agent'
+    }
+
+    options {
+        disableConcurrentBuilds()
+        timeout(time: 20, unit: 'MINUTES')
+        skipDefaultCheckout(true)
+    }
+
+    parameters {
+        booleanParam(
+            name: 'APPLY_CONFIGURATION',
+            defaultValue: false,
+            description: 'Apply the common server configuration after connectivity checks'
+        )
+    }
+
+    environment {
+        ANSIBLE_HOST_KEY_CHECKING = 'True'
+    }
+
+    stages {
+        stage('Checkout') {
+            steps {
+                checkout scm
+            }
+        }
+
+        stage('Validate playbook') {
+            steps {
+                sh '''
+                    ansible-playbook \
+                      -i ansible/inventories/jenkins.ini \
+                      ansible/playbooks/common.yml \
+                      --syntax-check
+                '''
+            }
+        }
+
+        stage('Verify server access') {
+            steps {
+                sshagent(credentials: ['hv-capstone-ansible-ssh']) {
+                    sh '''
+                        set -eu
+                        export ANSIBLE_SSH_COMMON_ARGS="-o BatchMode=yes -o StrictHostKeyChecking=yes -o UserKnownHostsFile=$WORKSPACE/ansible/files/configuration_known_hosts"
+
+                        ansible -i ansible/inventories/jenkins.ini \
+                          all -m ansible.builtin.ping
+
+                        ansible -i ansible/inventories/jenkins.ini \
+                          all --become -m ansible.builtin.command \
+                          -a 'id -u'
+                    '''
+                }
+            }
+        }
+
+        stage('Configure common software') {
+            when {
+                expression { params.APPLY_CONFIGURATION }
+            }
+            steps {
+                sshagent(credentials: ['hv-capstone-ansible-ssh']) {
+                    sh '''
+                        set -eu
+                        export ANSIBLE_SSH_COMMON_ARGS="-o BatchMode=yes -o StrictHostKeyChecking=yes -o UserKnownHostsFile=$WORKSPACE/ansible/files/configuration_known_hosts"
+
+                        ansible-playbook \
+                          -i ansible/inventories/jenkins.ini \
+                          ansible/playbooks/common.yml
+                    '''
+                }
+            }
+        }
+    }
+}
