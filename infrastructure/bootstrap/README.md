@@ -2,7 +2,7 @@
 
 Creates the S3 bucket used to store Terraform state for the capstone.
 
-Planned bucket configuration:
+Implemented bucket configuration:
 
 - Block all public access.
 - Enable versioning.
