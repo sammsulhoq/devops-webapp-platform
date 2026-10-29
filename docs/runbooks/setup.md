@@ -347,3 +347,53 @@ Confirm:
 See validation.md for completed tests and their limitations.
 See troubleshooting.md for recovery procedures.
 See cost-management.md for pause and cleanup considerations.
+
+## Additional Configuration and Monitoring Prerequisites
+
+### Ansible Configuration Job
+
+Create capstone-server-configuration using
+jenkins/Jenkinsfile.configuration and branch */main.
+
+Install the SSH Agent plugin.
+
+Generate a dedicated SSH key pair for configuration. Authorize its public
+key for ubuntu on both management servers, preserving existing keys.
+Store the private key and its matching passphrase in Jenkins credential
+hv-capstone-ansible-ssh, with username ubuntu.
+
+The credential permits sudo through ubuntu. Restrict job configuration
+and repository write access accordingly.
+
+The pipeline uses ansible/inventories/jenkins.ini with private addresses
+and ansible/files/configuration_known_hosts with verified server host keys.
+Update these files after server replacement. Never disable host-key
+checking to bypass an unexpected key change.
+
+Management Terraform attaches a configuration security group allowing
+SSH from the agent security group to both servers.
+
+Run the configuration job first with APPLY_CONFIGURATION disabled.
+Verify both hosts return pong and sudo checks return 0.
+Then enable APPLY_CONFIGURATION to apply common.yml.
+
+After successful platform Terraform applies, the infrastructure job
+queues configuration automatically. The downstream job reports its own
+result separately.
+
+### Jenkins Monitoring
+
+Install the Jenkins Prometheus metrics plugin.
+
+Management Terraform requires monitoring_source_cidr in addition to the
+administrator CIDR. Set it to the EKS NAT Gateway public IPv4 /32.
+This allows the EKS scrape source to reach the controller on port 8080.
+
+The monitoring pipeline discovers the controller's current public IP,
+renders monitoring/jenkins-scrape-values.yaml, and deploys the scrape
+configuration and monitoring/jenkins-dashboard.json.
+
+Rerun the monitoring pipeline after the controller's public IP changes.
+Verify up{job="jenkins"} = 1 and open the Capstone Jenkins dashboard.
+
+See jenkins-monitoring.md for network and security limitations.
