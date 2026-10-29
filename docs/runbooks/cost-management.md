@@ -64,3 +64,27 @@ Do not present account-wide costs as project-only costs. Shared resources,
 tag coverage, reporting delay, and permissions can limit attribution.
 
 No measured savings percentage or final project cost is claimed here.
+
+## Recorded Account Cost Evidence
+
+Retrieved on 2026-10-29 for 2026-10-26 through 2026-10-29.
+The API end date, 2026-10-30, is exclusive.
+Dates follow the AWS billing reporting period.
+
+| Date | Unblended cost (USD) | Estimated |
+|---|---:|---|
+| 2026-10-26 | 0.4796 | true |
+| 2026-10-27 | 6.0416 | true |
+| 2026-10-28 | 6.3190 | true |
+| 2026-10-29 | 2.3744 | true |
+
+Total returned: **USD 15.2146**.
+
+These are account-wide figures, not capstone-only costs.
+The Project tag query returned no usable project value for this period,
+so project attribution could not be verified.
+
+Recent billing data may be delayed, and the current day is incomplete.
+These figures are not a final invoice or evidence of measured savings.
+
+Source: [Cost Explorer response](account-costs-2026-10-29.json)
