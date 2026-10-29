@@ -146,6 +146,7 @@ The application is published on the computer's loopback address only.
 ## Operational Documentation
 
 - [Setup guide](docs/runbooks/setup.md)
+- [Demonstration guide](docs/runbooks/demo.md)
 
 - [Jenkins pipelines](docs/runbooks/pipelines.md)
 - [Jenkins monitoring](docs/runbooks/jenkins-monitoring.md)
