@@ -147,6 +147,7 @@ The application is published on the computer's loopback address only.
 
 - [Setup guide](docs/runbooks/setup.md)
 - [Demonstration guide](docs/runbooks/demo.md)
+- [Viva preparation](docs/runbooks/viva.md)
 
 - [Jenkins pipelines](docs/runbooks/pipelines.md)
 - [Jenkins monitoring](docs/runbooks/jenkins-monitoring.md)
