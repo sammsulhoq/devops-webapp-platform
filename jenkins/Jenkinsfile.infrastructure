@@ -90,6 +90,24 @@ pipeline {
                 }
             }
         }
+
+        stage('Trigger server configuration') {
+            when {
+                expression { params.APPLY_CHANGES }
+            }
+            steps {
+                build(
+                    job: 'capstone-server-configuration',
+                    parameters: [
+                        booleanParam(
+                            name: 'APPLY_CONFIGURATION',
+                            value: true
+                        )
+                    ],
+                    wait: false
+                )
+            }
+        }
     }
 
     post {
