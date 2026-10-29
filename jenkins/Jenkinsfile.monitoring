@@ -66,6 +66,7 @@ pipeline {
 
                     kubectl apply -f monitoring/app-servicemonitor.yaml
                     kubectl apply -f monitoring/app-dashboard.json
+                    kubectl apply -f monitoring/jenkins-dashboard.json
                     kubectl apply -f monitoring/app-alerts.yaml
 
                     kubectl -n monitoring get pods
