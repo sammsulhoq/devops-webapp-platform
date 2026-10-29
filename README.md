@@ -143,6 +143,13 @@ APP_VERSION=my-local-version docker compose up -d --wait
 
 The application is published on the computer's loopback address only.
 
+## Operational Documentation
+
+- [Jenkins pipelines](docs/runbooks/pipelines.md)
+- [Troubleshooting](docs/runbooks/troubleshooting.md)
+- [Validation results and limitations](docs/runbooks/validation.md)
+- [Project screenshots](docs/screenshots/)
+
 ## Credentials and Configuration
 
 Do not commit credentials, private keys, environment files, Terraform state, or saved Terraform plans.
