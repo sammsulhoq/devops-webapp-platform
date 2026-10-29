@@ -1,0 +1,14 @@
+prometheus:
+  prometheusSpec:
+    additionalScrapeConfigs:
+      - job_name: jenkins
+        metrics_path: /prometheus/
+        scheme: http
+        scrape_interval: 30s
+        scrape_timeout: 15s
+        static_configs:
+          - targets:
+              - "JENKINS_CONTROLLER_IP:8080"
+            labels:
+              component: jenkins-controller
+              environment: dev

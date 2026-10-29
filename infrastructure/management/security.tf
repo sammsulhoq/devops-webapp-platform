@@ -12,6 +12,14 @@ resource "aws_security_group" "jenkins_controller" {
   }
 
   ingress {
+    description = "Jenkins metrics from EKS NAT Gateway"
+    from_port   = 8080
+    to_port     = 8080
+    protocol    = "tcp"
+    cidr_blocks = [var.monitoring_source_cidr]
+  }
+
+  ingress {
     description = "Jenkins web interface from administrator"
     from_port   = 8080
     to_port     = 8080

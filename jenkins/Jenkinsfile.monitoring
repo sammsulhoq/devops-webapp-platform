@@ -38,12 +38,29 @@ pipeline {
                       capstone-alertmanager-config \
                       -o name
 
+                    controller_ip="$(aws ec2 describe-instances \
+                      --region "$AWS_DEFAULT_REGION" \
+                      --filters \
+                        Name=tag:Name,Values=hv-capstone-jenkins-controller \
+                        Name=instance-state-name,Values=running \
+                      --query 'Reservations[].Instances[].PublicIpAddress' \
+                      --output text \
+                      --no-cli-pager)"
+
+                    export CAPSTONE_CONTROLLER_IP="$controller_ip"
+                    python3 -c 'import ipaddress, os; ipaddress.IPv4Address(os.environ["CAPSTONE_CONTROLLER_IP"]); print("Controller IPv4 address validated")'
+
+                    sed "s/JENKINS_CONTROLLER_IP/$controller_ip/g" \
+                      monitoring/jenkins-scrape-values.yaml \
+                      > "$work_dir/jenkins-scrape-values.yaml"
+
                     helm upgrade --install \
                       capstone-monitoring \
                       oci://ghcr.io/prometheus-community/charts/kube-prometheus-stack \
                       --version 92.14.0 \
                       --namespace monitoring \
                       -f monitoring/values.yaml \
+                      -f "$work_dir/jenkins-scrape-values.yaml" \
                       --wait \
                       --timeout 10m
 
